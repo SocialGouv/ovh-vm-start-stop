@@ -53,7 +53,6 @@ async function main() {
                     console.error('Consumer key test failed:', error);
                     reject(error);
                 } else {
-                    console.log('Consumer key test successful. Account info:', result);
                     resolve(result);
                 }
             });
@@ -85,9 +84,7 @@ async function main() {
                 } else resolve(result);
             });
         });
-        
-        console.log('Available projects:', projects);
-        
+
         if (!projects.includes(process.env.OVH_SERVICE_NAME!)) {
             throw new Error(`Project ${process.env.OVH_SERVICE_NAME} not found in available projects: ${projects.join(', ')}`);
         }
@@ -102,7 +99,6 @@ async function main() {
                 } else resolve(result);
             });
         });
-        console.log('Available regions:', regions);
         
         if (!regions.includes(process.env.OVH_REGION!)) {
             throw new Error(`Region ${process.env.OVH_REGION} not found. Available regions: ${regions.join(', ')}`);
@@ -118,7 +114,6 @@ async function main() {
                 } else resolve(result);
             });
         });
-        console.log('Available SSH keys:', sshKeys.map(key => `${key.name} (${key.id})`));
 
         const sshKey = sshKeys.find(key => 
             key.id.toLowerCase() === process.env.OVH_SSH_KEY_ID!.toLowerCase() ||

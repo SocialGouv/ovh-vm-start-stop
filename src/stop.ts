@@ -49,7 +49,6 @@ async function main() {
                     console.error('Consumer key test failed:', error);
                     reject(error);
                 } else {
-                    console.log('Consumer key test successful. Account info:', result);
                     resolve(result);
                 }
             });
@@ -72,12 +71,10 @@ async function main() {
             });
         });
 
-        console.log('Available instances:', instances.map(instance => `${instance.name} (${instance.id})`));
-
         // Find the instance by name
         const instance = instances.find(i => i.name === process.env.INSTANCE_NAME);
         if (!instance) {
-            console.log(`Instance ${process.env.INSTANCE_NAME} not found. Available instances: ${instances.map(i => i.name).join(', ')}`);
+            console.log(`Instance ${process.env.INSTANCE_NAME} not found.`);
             return;
         }
 
