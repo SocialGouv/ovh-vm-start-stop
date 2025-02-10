@@ -77,7 +77,8 @@ async function main() {
         // Find the instance by name
         const instance = instances.find(i => i.name === process.env.INSTANCE_NAME);
         if (!instance) {
-            throw new Error(`Instance ${process.env.INSTANCE_NAME} not found. Available instances: ${instances.map(i => i.name).join(', ')}`);
+            console.log(`Instance ${process.env.INSTANCE_NAME} not found. Available instances: ${instances.map(i => i.name).join(', ')}`);
+            return;
         }
 
         // Delete the instance
