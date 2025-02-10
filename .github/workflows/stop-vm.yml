@@ -2,11 +2,6 @@ name: Stop OVH VM
 
 on:
   workflow_dispatch:
-    inputs:
-      instance_name:
-        description: 'Instance name (will be prefixed with github-action-vm)'
-        required: true
-        type: string
 
 jobs:
   stop-vm:
@@ -31,4 +26,4 @@ jobs:
           OVH_APPLICATION_SECRET: ${{ secrets.OVH_APPLICATION_SECRET }}
           OVH_CONSUMER_KEY: ${{ secrets.OVH_CONSUMER_KEY }}
           OVH_SERVICE_NAME: ${{ secrets.OVH_SERVICE_NAME }}
-          INSTANCE_NAME: github-action-vm-${{ inputs.instance_name }}
+          OVH_INSTANCE_NAME: ${{ vars.OVH_INSTANCE_NAME }}

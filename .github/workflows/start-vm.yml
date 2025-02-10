@@ -2,11 +2,6 @@ name: Start OVH VM
 
 on:
   workflow_dispatch:
-    inputs:
-      instance_name:
-        description: 'Instance name (will be suffixed to github-action-vm)'
-        required: true
-        type: string
 
 jobs:
   start-vm:
@@ -31,8 +26,4 @@ jobs:
           OVH_APPLICATION_SECRET: ${{ secrets.OVH_APPLICATION_SECRET }}
           OVH_CONSUMER_KEY: ${{ secrets.OVH_CONSUMER_KEY }}
           OVH_SERVICE_NAME: ${{ secrets.OVH_SERVICE_NAME }}
-          OVH_SSH_KEY_ID: ${{ vars.OVH_SSH_KEY_ID }}
-          INSTANCE_NAME: github-action-vm-${{ inputs.instance_name }}
-          OVH_INSTANCE_FLAVOR_NAME: "B3-64"
-          OVH_INSTANCE_IMAGE_NAME: "Ubuntu 24.10"
-          OVH_REGION: "GRA11"
+          OVH_INSTANCE_NAME: ${{ vars.OVH_INSTANCE_NAME }}

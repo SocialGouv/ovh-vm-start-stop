@@ -9,11 +9,7 @@ async function main() {
         'OVH_APPLICATION_SECRET',
         'OVH_CONSUMER_KEY',
         'OVH_SERVICE_NAME',
-        'OVH_SSH_KEY_ID',
-        'OVH_INSTANCE_FLAVOR_NAME',
-        'OVH_INSTANCE_IMAGE_NAME',
-        'OVH_REGION',
-        'INSTANCE_NAME'
+        'OVH_INSTANCE_NAME'
     ];
 
     for (const envVar of requiredEnvVars) {
@@ -58,16 +54,6 @@ async function main() {
             });
         });
 
-        interface Flavor {
-            id: string;
-            name: string;
-        }
-
-        interface Image {
-            id: string;
-            name: string;
-        }
-
         interface Instance {
             id: string;
             name: string;
@@ -89,101 +75,49 @@ async function main() {
             throw new Error(`Project ${process.env.OVH_SERVICE_NAME} not found in available projects: ${projects.join(', ')}`);
         }
 
-        // Get available regions
-        console.log('Requesting regions...');
-        const regions: string[] = await new Promise((resolve, reject) => {
-            client.request('GET', `/cloud/project/${process.env.OVH_SERVICE_NAME!}/region`, (error, result) => {
+        // Get list of instances
+        console.log('Getting instances...');
+        const instances = await new Promise<Instance[]>((resolve, reject) => {
+            client.request('GET', `/cloud/project/${process.env.OVH_SERVICE_NAME!}/instance`, (error, result) => {
                 if (error) {
-                    console.error('Error getting regions:', error);
+                    console.error('Error getting instances:', error);
                     reject(error);
                 } else resolve(result);
             });
         });
-        
-        if (!regions.includes(process.env.OVH_REGION!)) {
-            throw new Error(`Region ${process.env.OVH_REGION} not found. Available regions: ${regions.join(', ')}`);
+
+        const instance = instances.find(i => i.name === process.env.OVH_INSTANCE_NAME);
+        if (!instance) {
+            throw new Error(`Instance ${process.env.OVH_INSTANCE_NAME} not found. Please create it first.`);
         }
 
-        // Get SSH keys
-        console.log('Requesting SSH keys...');
-        const sshKeys: Array<{ id: string; name: string }> = await new Promise((resolve, reject) => {
-            client.request('GET', `/cloud/project/${process.env.OVH_SERVICE_NAME!}/sshkey`, (error, result) => {
-                if (error) {
-                    console.error('Error getting SSH keys:', error);
-                    reject(error);
-                } else resolve(result);
-            });
-        });
-
-        const sshKey = sshKeys.find(key => 
-            key.id.toLowerCase() === process.env.OVH_SSH_KEY_ID!.toLowerCase() ||
-            key.name.toLowerCase() === process.env.OVH_SSH_KEY_ID!.toLowerCase()
-        );
-        if (!sshKey) {
-            throw new Error(`SSH key ${process.env.OVH_SSH_KEY_ID} not found. Available keys: ${sshKeys.map(key => `${key.name} (${key.id})`).join(', ')}`);
-        }
-
-        // Get flavor ID for b3-64
-        console.log('Getting flavor ID...');
-        const flavors = await new Promise<any[]>((resolve, reject) => {
-            client.request('GET', `/cloud/project/${process.env.OVH_SERVICE_NAME!}/flavor?region=${process.env.OVH_REGION}`, (error, result) => {
-                if (error) {
-                    console.error('Error getting flavors:', error);
-                    reject(error);
-                } else resolve(result);
-            });
-        });
-
-        const flavor = flavors.find(f => f.name === 'b3-64');
-        if (!flavor) {
-            throw new Error('Flavor b3-64 not found');
-        }
-
-        // Get image ID for Ubuntu 24.10
-        console.log('Getting image ID...');
-        const images = await new Promise<any[]>((resolve, reject) => {
-            client.request('GET', `/cloud/project/${process.env.OVH_SERVICE_NAME!}/image?flavorType=${flavor.id}&osType=linux&region=${process.env.OVH_REGION}`, (error, result) => {
-                if (error) {
-                    console.error('Error getting images:', error);
-                    reject(error);
-                } else resolve(result);
-            });
-        });
-
-        const image = images.find(i => i.name === 'Ubuntu 24.10');
-        if (!image) {
-            throw new Error('Image Ubuntu 24.10 not found');
-        }
-
-        // Create the instance with the flavor and image IDs
-        console.log('Creating instance with configuration:', {
-            flavorId: flavor.id,
-            imageId: image.id,
-            name: process.env.INSTANCE_NAME,
-            region: 'GRA11',
-            sshKeyId: sshKey.id,
-        });
-
-        const instance = await new Promise<Instance>((resolve, reject) => {
-            client.request('POST', `/cloud/project/${process.env.OVH_SERVICE_NAME!}/instance`, {
-                flavorId: flavor.id,
-                imageId: image.id,
-                name: process.env.INSTANCE_NAME,
-                region: 'GRA11',
-                sshKeyId: sshKey.id,
-            }, (error, result) => {
-                if (error) {
-                    console.error('Error creating instance:', error);
-                    reject(error);
-                } else resolve(result);
-            });
-        });
-
-        console.log('Instance creation started:', {
+        console.log('Found instance:', {
             id: instance.id,
             name: instance.name,
             status: instance.status,
         });
+
+        if (instance.status === 'ACTIVE') {
+            console.log('Instance is already running. Nothing to do.');
+            return;
+        }
+
+        if (instance.status === 'STOPPED') {
+            console.log('Starting instance...');
+            await new Promise<void>((resolve, reject) => {
+                client.request('POST', `/cloud/project/${process.env.OVH_SERVICE_NAME!}/instance/${instance.id}/start`, {}, (error) => {
+                    if (error) {
+                        console.error('Error starting instance:', error);
+                        reject(error);
+                    } else {
+                        console.log('Instance start initiated successfully');
+                        resolve();
+                    }
+                });
+            });
+        } else {
+            throw new Error(`Instance is in unexpected state: ${instance.status}`);
+        }
 
     } catch (error: any) {
         console.error('Error:', error);

@@ -9,7 +9,7 @@ async function main() {
         'OVH_APPLICATION_SECRET',
         'OVH_CONSUMER_KEY',
         'OVH_SERVICE_NAME',
-        'INSTANCE_NAME'
+        'OVH_INSTANCE_NAME'
     ];
 
     for (const envVar of requiredEnvVars) {
@@ -72,21 +72,32 @@ async function main() {
         });
 
         // Find the instance by name
-        const instance = instances.find(i => i.name === process.env.INSTANCE_NAME);
+        const instance = instances.find(i => i.name === process.env.OVH_INSTANCE_NAME);
         if (!instance) {
-            console.log(`Instance ${process.env.INSTANCE_NAME} not found.`);
+            console.log(`Instance ${process.env.OVH_INSTANCE_NAME} not found. Nothing to do.`);
             return;
         }
 
-        // Delete the instance
-        console.log(`Deleting instance ${instance.name} (${instance.id})...`);
+        console.log('Found instance:', {
+            id: instance.id,
+            name: instance.name,
+            status: instance.status,
+        });
+
+        if (instance.status !== 'ACTIVE') {
+            console.log('Instance is not running. Nothing to do.');
+            return;
+        }
+
+        // Stop the instance
+        console.log('Stopping instance...');
         await new Promise<void>((resolve, reject) => {
-            client.request('DELETE', `/cloud/project/${process.env.OVH_SERVICE_NAME!}/instance/${instance.id}`, (error) => {
+            client.request('POST', `/cloud/project/${process.env.OVH_SERVICE_NAME!}/instance/${instance.id}/stop`, {}, (error) => {
                 if (error) {
-                    console.error('Error deleting instance:', error);
+                    console.error('Error stopping instance:', error);
                     reject(error);
                 } else {
-                    console.log(`Successfully deleted instance ${instance.name}`);
+                    console.log('Instance stop initiated successfully');
                     resolve();
                 }
             });
