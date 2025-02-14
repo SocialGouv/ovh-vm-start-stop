@@ -102,22 +102,23 @@ async function main() {
             return;
         }
 
-        if (instance.status === 'STOPPED') {
-            console.log('Starting instance...');
-            await new Promise<void>((resolve, reject) => {
-                client.request('POST', `/cloud/project/${process.env.OVH_SERVICE_NAME!}/instance/${instance.id}/start`, {}, (error) => {
-                    if (error) {
-                        console.error('Error starting instance:', error);
-                        reject(error);
-                    } else {
-                        console.log('Instance start initiated successfully');
-                        resolve();
-                    }
-                });
-            });
-        } else {
-            throw new Error(`Instance is in unexpected state: ${instance.status}`);
+        // Check if instance is in a state where it can be unshelved
+        if (!['SHELVED', 'SHELVED_OFFLOADED'].includes(instance.status)) {
+            throw new Error(`Instance is in ${instance.status} state. Can only unshelve from SHELVED or SHELVED_OFFLOADED states.`);
         }
+
+        console.log('Unshelving instance...');
+        await new Promise<void>((resolve, reject) => {
+            client.request('POST', `/cloud/project/${process.env.OVH_SERVICE_NAME!}/instance/${instance.id}/unshelve`, {}, (error) => {
+                if (error) {
+                    console.error('Error unshelving instance:', error);
+                    reject(error);
+                } else {
+                    console.log('Instance unshelve initiated successfully');
+                    resolve();
+                }
+            });
+        });
 
     } catch (error: any) {
         console.error('Error:', error);

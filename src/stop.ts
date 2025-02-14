@@ -84,20 +84,21 @@ async function main() {
             status: instance.status,
         });
 
-        if (instance.status !== 'ACTIVE') {
-            console.log('Instance is not running. Nothing to do.');
+        // Only shelve if instance is in a state where it can be shelved
+        if (!['ACTIVE', 'SHUTOFF', 'STOPPED'].includes(instance.status)) {
+            console.log(`Instance is in ${instance.status} state. Cannot shelve from this state.`);
             return;
         }
 
-        // Stop the instance
-        console.log('Stopping instance...');
+        // Shelve the instance (suspend to save costs)
+        console.log('Shelving instance...');
         await new Promise<void>((resolve, reject) => {
-            client.request('POST', `/cloud/project/${process.env.OVH_SERVICE_NAME!}/instance/${instance.id}/stop`, {}, (error) => {
+            client.request('POST', `/cloud/project/${process.env.OVH_SERVICE_NAME!}/instance/${instance.id}/shelve`, {}, (error) => {
                 if (error) {
-                    console.error('Error stopping instance:', error);
+                    console.error('Error shelving instance:', error);
                     reject(error);
                 } else {
-                    console.log('Instance stop initiated successfully');
+                    console.log('Instance shelve initiated successfully');
                     resolve();
                 }
             });
